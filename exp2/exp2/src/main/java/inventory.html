@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Control System</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Inventory Control System</h1>
+
+    <h3>Add New Item</h3>
+
+    <input id="item-name"
+           type="text"
+           placeholder="Item Name">
+
+    <input id="item-quantity"
+           type="number"
+           placeholder="Quantity">
+
+    <input id="item-price"
+           type="number"
+           placeholder="Price">
+
+    <button id="add-item-button" onclick="addItem()">
+        Add Item
+    </button>
+
+    <button id="update-item-button" onclick="updateItem()">
+        Update Item
+    </button>
+
+    <button id="delete-item-button" onclick="deleteItem()">
+        Delete Item
+    </button>
+
+    <div id="message"></div>
+
+    <h3>Inventory</h3>
+
+    <table id="inventory-table">
+
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+        </thead>
+
+        <tbody id="inventory-body">
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<script>
+
+    let items = [
+        { id: 1, name: "Laptop", quantity: 10, price: 50000 },
+        { id: 2, name: "Wireless Mouse", quantity: 40, price: 750 },
+        { id: 3, name: "Mechanical Keyboard", quantity: 25, price: 2500 },
+        { id: 4, name: "Monitor 24-inch", quantity: 15, price: 12000 },
+        { id: 5, name: "USB-C Hub", quantity: 60, price: 1200 },
+        { id: 6, name: "External Hard Drive 1TB", quantity: 20, price: 4500 },
+        { id: 7, name: "Webcam HD", quantity: 35, price: 1800 },
+        { id: 8, name: "Bluetooth Speaker", quantity: 18, price: 2200 },
+        { id: 9, name: "Laptop Stand", quantity: 45, price: 900 },
+        { id: 10, name: "Wireless Charger", quantity: 50, price: 1100 },
+        { id: 11, name: "Gaming Headset", quantity: 22, price: 3200 },
+        { id: 12, name: "Portable SSD 512GB", quantity: 28, price: 5500 },
+        { id: 13, name: "HDMI Cable", quantity: 100, price: 350 },
+        { id: 14, name: "Power Bank 10000mAh", quantity: 30, price: 1400 },
+        { id: 15, name: "Desk Lamp LED", quantity: 40, price: 850 }
+    ];
+
+    // FIX (Defect #1): IDs must never be reused after a delete.
+    // A monotonically increasing counter replaces items.length + 1.
+    let nextItemId = items.reduce(function(max, item) {
+        return Math.max(max, item.id);
+    }, 0) + 1;
+
+    let selectedId = null;
+
+    function displayItems() {
+
+        const body = document.getElementById("inventory-body");
+
+        body.innerHTML = "";
+
+        items.forEach(function(item) {
+
+            const row = document.createElement("tr");
+
+            row.innerHTML =
+                "<td>" + item.id + "</td>" +
+                "<td>" + item.name + "</td>" +
+                "<td>" + item.quantity + "</td>" +
+                "<td>" + item.price + "</td>";
+
+            row.onclick = function() {
+                selectedId = item.id;
+                document.getElementById("item-name").value = item.name;
+                document.getElementById("item-quantity").value = item.quantity;
+                document.getElementById("item-price").value = item.price;
+            };
+
+            body.appendChild(row);
+        });
+    }
+
+    // FIX (Defect #3, #4): reject NaN, non-integer quantity, blank/whitespace-only name.
+    function isValidInput(name, quantity, price) {
+        if (name.trim() === "") return false;
+        if (isNaN(quantity) || isNaN(price)) return false;
+        if (!Number.isInteger(quantity)) return false;
+        if (quantity <= 0 || price <= 0) return false;
+        return true;
+    }
+
+    function addItem() {
+
+        const name = document.getElementById("item-name").value;
+        const quantity = Number(document.getElementById("item-quantity").value);
+        const price = Number(document.getElementById("item-price").value);
+
+        if (!isValidInput(name, quantity, price)) {
+            document.getElementById("message").innerText =
+                "Please enter valid item details.";
+            return;
+        }
+
+        const newItem = {
+            id: nextItemId,
+            name: name.trim(),
+            quantity: quantity,
+            price: price
+        };
+
+        nextItemId = nextItemId + 1;
+
+        items.push(newItem);
+
+        document.getElementById("message").innerText =
+            "New item added successfully.";
+
+        displayItems();
+    }
+
+    function updateItem() {
+
+        if (selectedId === null) {
+            document.getElementById("message").innerText =
+                "Select an item first.";
+            return;
+        }
+
+        const name = document.getElementById("item-name").value;
+        const quantity = Number(document.getElementById("item-quantity").value);
+        const price = Number(document.getElementById("item-price").value);
+
+        // FIX (Defect #2): update() previously had no validation at all.
+        if (!isValidInput(name, quantity, price)) {
+            document.getElementById("message").innerText =
+                "Please enter valid item details.";
+            return;
+        }
+
+        const item = items.find(x => x.id === selectedId);
+
+        item.name = name.trim();
+        item.quantity = quantity;
+        item.price = price;
+
+        document.getElementById("message").innerText =
+            "Item updated successfully.";
+
+        displayItems();
+    }
+
+    function deleteItem() {
+
+        if (selectedId === null) {
+            document.getElementById("message").innerText =
+                "Select an item first.";
+            return;
+        }
+
+        items = items.filter(x => x.id !== selectedId);
+        selectedId = null;
+
+        document.getElementById("message").innerText =
+            "Item deleted successfully.";
+
+        displayItems();
+    }
+
+    displayItems();
+
+</script>
+
+</body>
+</html>

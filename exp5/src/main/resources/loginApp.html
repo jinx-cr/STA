@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Control System - Login</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        #login-message, #message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div class="container" id="login-container">
+
+    <h1>Inventory Control System</h1>
+    <h3>Login</h3>
+
+    <input id="username" type="text" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+
+    <button id="login-button" onclick="login()">Login</button>
+
+    <div id="login-message"></div>
+
+</div>
+
+<!-- ===================== INVENTORY SCREEN (hidden until login) ===================== -->
+<div class="container" id="inventory-container" style="display:none;">
+
+    <h1>Inventory Control System</h1>
+    <h2 id="welcome-message"></h2>
+
+    <h3>Add New Item</h3>
+
+    <input id="item-name" type="text" placeholder="Item Name">
+    <input id="item-quantity" type="number" placeholder="Quantity">
+    <input id="item-price" type="number" placeholder="Price">
+
+    <button id="add-item-button" onclick="addItem()">Add Item</button>
+    <button id="update-item-button" onclick="updateItem()">Update Item</button>
+    <button id="delete-item-button" onclick="deleteItem()">Delete Item</button>
+
+    <div id="message"></div>
+
+    <h3>Inventory</h3>
+
+    <table id="inventory-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+        </thead>
+        <tbody id="inventory-body"></tbody>
+    </table>
+
+</div>
+
+<script>
+
+    // ================= LOGIN LOGIC =================
+
+    const VALID_USERNAME = "admin";
+    const VALID_PASSWORD = "admin123";
+
+    // Slow Response defect scenario: append ?delay=8000 to the URL
+    // to make login artificially take 8 seconds, simulating an
+    // unresponsive server. The test decides what counts as "too slow".
+    const urlParams = new URLSearchParams(window.location.search);
+    const artificialDelayMs = parseInt(urlParams.get("delay") || "0", 10);
+
+    function login() {
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const loginMessage = document.getElementById("login-message");
+
+        if (username.trim() === "" || password.trim() === "") {
+            loginMessage.innerText = "Username and password are required.";
+            return;
+        }
+
+        loginMessage.innerText = "Logging in...";
+
+        setTimeout(function () {
+
+            if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+
+                document.getElementById("login-container").style.display = "none";
+                document.getElementById("inventory-container").style.display = "block";
+                document.getElementById("welcome-message").innerText =
+                    "Welcome, " + username + "!";
+
+            } else {
+
+                loginMessage.innerText = "Invalid username or password.";
+            }
+
+        }, artificialDelayMs);
+    }
+
+    // ================= INVENTORY LOGIC (same as exp2's inventory.html) =================
+
+    let items = [
+        { id: 1, name: "Laptop", quantity: 10, price: 50000 },
+        { id: 2, name: "Wireless Mouse", quantity: 40, price: 750 },
+        { id: 3, name: "Mechanical Keyboard", quantity: 25, price: 2500 },
+        { id: 4, name: "Monitor 24-inch", quantity: 15, price: 12000 },
+        { id: 5, name: "USB-C Hub", quantity: 60, price: 1200 }
+    ];
+
+    let nextItemId = items.reduce(function (max, item) {
+        return Math.max(max, item.id);
+    }, 0) + 1;
+
+    let selectedId = null;
+
+    function displayItems() {
+
+        const body = document.getElementById("inventory-body");
+        body.innerHTML = "";
+
+        items.forEach(function (item) {
+
+            const row = document.createElement("tr");
+
+            row.innerHTML =
+                "<td>" + item.id + "</td>" +
+                "<td>" + item.name + "</td>" +
+                "<td>" + item.quantity + "</td>" +
+                "<td>" + item.price + "</td>";
+
+            row.onclick = function () {
+                selectedId = item.id;
+                document.getElementById("item-name").value = item.name;
+                document.getElementById("item-quantity").value = item.quantity;
+                document.getElementById("item-price").value = item.price;
+            };
+
+            body.appendChild(row);
+        });
+    }
+
+    function isValidInput(name, quantity, price) {
+        if (name.trim() === "") return false;
+        if (isNaN(quantity) || isNaN(price)) return false;
+        if (!Number.isInteger(quantity)) return false;
+        if (quantity <= 0 || price <= 0) return false;
+        return true;
+    }
+
+    function addItem() {
+
+        const name = document.getElementById("item-name").value;
+        const quantity = Number(document.getElementById("item-quantity").value);
+        const price = Number(document.getElementById("item-price").value);
+
+        if (!isValidInput(name, quantity, price)) {
+            document.getElementById("message").innerText = "Please enter valid item details.";
+            return;
+        }
+
+        items.push({ id: nextItemId, name: name.trim(), quantity: quantity, price: price });
+        nextItemId = nextItemId + 1;
+
+        document.getElementById("message").innerText = "New item added successfully.";
+        displayItems();
+    }
+
+    function updateItem() {
+
+        if (selectedId === null) {
+            document.getElementById("message").innerText = "Select an item first.";
+            return;
+        }
+
+        const name = document.getElementById("item-name").value;
+        const quantity = Number(document.getElementById("item-quantity").value);
+        const price = Number(document.getElementById("item-price").value);
+
+        if (!isValidInput(name, quantity, price)) {
+            document.getElementById("message").innerText = "Please enter valid item details.";
+            return;
+        }
+
+        const item = items.find(x => x.id === selectedId);
+        item.name = name.trim();
+        item.quantity = quantity;
+        item.price = price;
+
+        document.getElementById("message").innerText = "Item updated successfully.";
+        displayItems();
+    }
+
+    function deleteItem() {
+
+        if (selectedId === null) {
+            document.getElementById("message").innerText = "Select an item first.";
+            return;
+        }
+
+        items = items.filter(x => x.id !== selectedId);
+        selectedId = null;
+
+        document.getElementById("message").innerText = "Item deleted successfully.";
+        displayItems();
+    }
+
+    displayItems();
+
+</script>
+
+</body>
+</html>
